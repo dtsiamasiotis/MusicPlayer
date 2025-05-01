@@ -1,0 +1,7 @@
+.slider .track {
+    -fx-background-color: lightgray;
+}
+
+.slider .thumb {
+    -fx-background-color: #2196F3; /* Blue thumb */
+}
