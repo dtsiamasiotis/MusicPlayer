@@ -6,7 +6,7 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.*?>
 
-<VBox prefHeight="200.0" prefWidth="100.0" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.musicplayer.MusicPlayerController">
+<VBox prefHeight="200.0" prefWidth="100.0" xmlns="http://javafx.com/javafx/" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.musicplayer.MusicPlayerController">
    <children>
       <HBox prefHeight="100.0" prefWidth="200.0">
          <children>
@@ -98,14 +98,14 @@
             </Label>
          </children>
       </HBox>
-      <ListView fx:id="playlist" prefWidth="1005.0" visible="false">
+      <ListView fx:id="playlist" onMouseClicked="#playFromPlaylist" prefWidth="1005.0" visible="false">
          <padding>
             <Insets top="5.0" />
          </padding></ListView>
       <HBox prefHeight="100.0" prefWidth="200.0">
          <children>
             <Button fx:id="addToPlaylistButton" mnemonicParsing="false" onAction="#addToPlaylist" text="Add" visible="false" />
-            <Button fx:id="removeFromPlaylistButton" mnemonicParsing="false" text="Remove" visible="false" />
+            <Button fx:id="removeFromPlaylistButton" onAction="#removeFromPlaylist" mnemonicParsing="false" text="Remove" visible="false" />
          </children>
       </HBox>
    </children>

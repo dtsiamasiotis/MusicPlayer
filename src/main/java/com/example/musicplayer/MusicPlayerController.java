@@ -14,6 +14,7 @@ import javafx.scene.control.ListView;
 import javafx.scene.control.Slider;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.MouseEvent;
 import javafx.stage.FileChooser;
 
 import javafx.scene.media.Media;
@@ -22,6 +23,7 @@ import javafx.stage.Stage;
 import javafx.util.Duration;
 
 import java.io.File;
+import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -31,6 +33,8 @@ public class MusicPlayerController {
     private ImageView coverArt;
     @FXML
     private ListView playlist;
+
+    private List<File> playlistFiles = new java.util.ArrayList<File>();
 
     @FXML
     private Button addToPlaylistButton;
@@ -66,6 +70,7 @@ public class MusicPlayerController {
     private String info;
     private String scrolledInfo;
     private Timer timer = new Timer();
+    String playListFileDescription = "";
 
     @FXML
     protected void openButtonClick() {
@@ -75,6 +80,7 @@ public class MusicPlayerController {
         fileChooser.getExtensionFilters().add(mp3Filter);
         File file = fileChooser.showOpenDialog(null);
         info = "";
+        coverArt.setImage(new Image("file:src/main/resources/com/example/musicplayer/icons/unknown_cover.png"));
 
         if (file != null) {
             Media media = new Media(file.toURI().toString());
@@ -84,54 +90,11 @@ public class MusicPlayerController {
 
             mediaPlayer = new MediaPlayer(media);
             positionSlider.setMin(0);
-
-            media.getMetadata().addListener(new MapChangeListener<String, Object>() {
-                @Override
-                public void onChanged(Change<? extends String, ?> change) {
-                    if (change.getMap().containsKey("artist")) {
-                        info = "*" + change.getMap().get("artist").toString();
-                        trackInfo.setText(info);
-                    }
-                    if (change.getMap().containsKey("title")) {
-                        info += "-" + change.getMap().get("title").toString() + "*";
-                        trackInfo.setText(info);
-                    }
-                    if (change.getMap().containsKey("image")) {
-                        coverArt.setImage((Image)change.getMap().get("image"));
-                    }
-
-                }
-            });
-
-
-            mediaPlayer.setOnPlaying(new Runnable() {
-                @Override
-                public void run() {
-                    startTrackInfoAnimation();
-                }
-
-            });
-
-            mediaPlayer.currentTimeProperty().addListener(new InvalidationListener() {
-                public void invalidated(Observable ov) {
-                    updateTimeElements();
-                }
-            });
-
-            positionSlider.valueProperty().addListener(new InvalidationListener() {
-                public void invalidated(Observable ov) {
-                    if (positionSlider.isValueChanging()) {
-                        Duration duration = mediaPlayer.getMedia().getDuration();
-                        // multiply duration by percentage calculated by slider position
-                        mediaPlayer.seek(duration.multiply(positionSlider.getValue() / 100.0));
-                    }
-                }});
-
+            updateInfoAndCoverArt(media);
+            updateUI(mediaPlayer);
             mediaPlayer.play();
 
         }
-
-
 
     }
 
@@ -224,14 +187,90 @@ public class MusicPlayerController {
 
     @FXML
     private void addToPlaylist() {
+
         FileChooser fileChooser = new FileChooser();
         FileChooser.ExtensionFilter mp3Filter = new FileChooser.ExtensionFilter("MP3 Files (*.mp3)", "*.mp3");
         fileChooser.getExtensionFilters().add(mp3Filter);
         File file = fileChooser.showOpenDialog(null);
         if (file != null) {
+            Media media = new Media(file.toURI().toString());
+
+            playlistFiles.add(file);
             playlist.getItems().add(file.getName());
+
+
+        }
+
+    }
+
+    @FXML
+    private void removeFromPlaylist() {
+        if (playlist.getSelectionModel().getSelectedItem() != null) {
+            playlistFiles.remove(playlist.getSelectionModel().getSelectedIndex());
+            playlist.getItems().remove(playlist.getSelectionModel().getSelectedIndex());
+        }
+    }
+
+    @FXML
+    private void playFromPlaylist(MouseEvent event) {
+        if (event.getClickCount() == 2) {
+            File file = playlistFiles.get(playlist.getSelectionModel().getSelectedIndex());
+            Media media = new Media(file.toURI().toString());
+            if (mediaPlayer != null) {
+                mediaPlayer.stop();
+            }
+
+            mediaPlayer = new MediaPlayer(media);
+            coverArt.setImage(new Image("file:src/main/resources/com/example/musicplayer/icons/unknown_cover.png"));
+            updateInfoAndCoverArt(media);
+            updateUI(mediaPlayer);
+            mediaPlayer.play();
         }
     }
 
 
+    private void updateUI(MediaPlayer mediaPlayer) {
+
+        mediaPlayer.setOnPlaying(new Runnable() {
+            @Override
+            public void run() {
+                startTrackInfoAnimation();
+            }
+
+        });
+
+        mediaPlayer.currentTimeProperty().addListener(new InvalidationListener() {
+            public void invalidated(Observable ov) {
+                updateTimeElements();
+            }
+        });
+
+        positionSlider.valueProperty().addListener(new InvalidationListener() {
+            public void invalidated(Observable ov) {
+                if (positionSlider.isValueChanging()) {
+                    Duration duration = mediaPlayer.getMedia().getDuration();
+                    // multiply duration by percentage calculated by slider position
+                    mediaPlayer.seek(duration.multiply(positionSlider.getValue() / 100.0));
+                }
+            }});
+    }
+
+    private void updateInfoAndCoverArt(Media media) {
+        media.getMetadata().addListener(new MapChangeListener<String, Object>() {
+            @Override
+            public void onChanged(Change<? extends String, ?> change) {
+                if (change.getMap().containsKey("artist")) {
+                    info = "*" + change.getMap().get("artist").toString();
+                    trackInfo.setText(info);
+                }
+                if (change.getMap().containsKey("title")) {
+                    info += "-" + change.getMap().get("title").toString() + "*";
+                    trackInfo.setText(info);
+                }
+                if (change.getMap().containsKey("image")) {
+                    coverArt.setImage((Image)change.getMap().get("image"));
+                }
+            }
+        });
+    }
 }
