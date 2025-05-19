@@ -40,7 +40,7 @@
       </HBox>
       <HBox prefHeight="32.0" prefWidth="217.0">
          <children>
-            <Button alignment="CENTER" mnemonicParsing="false" prefHeight="32.0" prefWidth="48.0">
+            <Button alignment="CENTER" mnemonicParsing="false" onAction="#previousButtonClick" prefHeight="32.0" prefWidth="48.0">
                 <graphic>
                     <ImageView>
                         <Image url="@icons/previous.png" />
@@ -73,7 +73,7 @@
                 </graphic>
 
             </Button>
-            <Button alignment="CENTER" mnemonicParsing="false" prefHeight="26.0" prefWidth="48.0">
+            <Button alignment="CENTER" mnemonicParsing="false" onAction="#nextButtonClick" prefHeight="26.0" prefWidth="48.0">
                 <graphic>
                     <ImageView>
                         <Image url="@icons/next.png" />
@@ -98,7 +98,7 @@
             </Label>
          </children>
       </HBox>
-      <ListView fx:id="playlist" onMouseClicked="#playFromPlaylist" prefWidth="1005.0" visible="false">
+      <ListView fx:id="playlist" onMouseClicked="#selectFromPlaylist" prefWidth="1005.0" visible="false">
          <padding>
             <Insets top="5.0" />
          </padding></ListView>

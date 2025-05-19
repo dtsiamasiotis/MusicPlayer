@@ -5,9 +5,6 @@ import javafx.beans.InvalidationListener;
 import javafx.beans.Observable;
 import javafx.collections.MapChangeListener;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
@@ -26,6 +23,7 @@ import java.io.File;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class MusicPlayerController {
 
@@ -56,6 +54,8 @@ public class MusicPlayerController {
     private Stage playlistWindow;
 
     private boolean playlistIsVisible = false;
+
+    private InvalidationListener positionInvalidationListener;
 
     @FXML
     public void initialize() {
@@ -212,20 +212,38 @@ public class MusicPlayerController {
     }
 
     @FXML
-    private void playFromPlaylist(MouseEvent event) {
+    private void selectFromPlaylist(MouseEvent event) {
         if (event.getClickCount() == 2) {
-            File file = playlistFiles.get(playlist.getSelectionModel().getSelectedIndex());
-            Media media = new Media(file.toURI().toString());
-            if (mediaPlayer != null) {
-                mediaPlayer.stop();
-            }
-
-            mediaPlayer = new MediaPlayer(media);
-            coverArt.setImage(new Image("file:src/main/resources/com/example/musicplayer/icons/unknown_cover.png"));
-            updateInfoAndCoverArt(media);
-            updateUI(mediaPlayer);
-            mediaPlayer.play();
+            playFromPlaylist();
         }
+    }
+
+    private void playFromPlaylist() {
+        AtomicInteger chosenIndex = new AtomicInteger(playlist.getSelectionModel().getSelectedIndex());
+        File file = playlistFiles.get(chosenIndex.get());
+        Media media = new Media(file.toURI().toString());
+        if (mediaPlayer != null) {
+            mediaPlayer.stop();
+        }
+
+        mediaPlayer = new MediaPlayer(media);
+        coverArt.setImage(new Image("file:src/main/resources/com/example/musicplayer/icons/unknown_cover.png"));
+        updateInfoAndCoverArt(media);
+        updateUI(mediaPlayer);
+        mediaPlayer.play();
+        mediaPlayer.setOnEndOfMedia(() -> {
+            int nextIndex = chosenIndex.incrementAndGet();
+            if (nextIndex < playlistFiles.size()) {
+                File nextFile = playlistFiles.get(nextIndex);
+                Media nextMedia = new Media(nextFile.toURI().toString());
+                mediaPlayer = new MediaPlayer(nextMedia);
+                coverArt.setImage(new Image("file:src/main/resources/com/example/musicplayer/icons/unknown_cover.png"));
+                updateInfoAndCoverArt(nextMedia);
+                updateUI(mediaPlayer);
+                playlist.getSelectionModel().selectNext();
+                mediaPlayer.play();
+            }
+        });
     }
 
 
@@ -245,14 +263,12 @@ public class MusicPlayerController {
             }
         });
 
-        positionSlider.valueProperty().addListener(new InvalidationListener() {
-            public void invalidated(Observable ov) {
-                if (positionSlider.isValueChanging()) {
-                    Duration duration = mediaPlayer.getMedia().getDuration();
-                    // multiply duration by percentage calculated by slider position
-                    mediaPlayer.seek(duration.multiply(positionSlider.getValue() / 100.0));
-                }
-            }});
+        if (positionInvalidationListener != null) {
+            positionSlider.valueProperty().removeListener(positionInvalidationListener);
+        }
+        positionInvalidationListener = createInvalidationListener(mediaPlayer);
+
+        positionSlider.valueProperty().addListener(positionInvalidationListener);
     }
 
     private void updateInfoAndCoverArt(Media media) {
@@ -272,5 +288,28 @@ public class MusicPlayerController {
                 }
             }
         });
+    }
+
+    private InvalidationListener createInvalidationListener(MediaPlayer mediaPlayer) {
+        return new InvalidationListener() {
+            public void invalidated(Observable ov) {
+                if (positionSlider.isValueChanging()) {
+                    Duration duration = mediaPlayer.getMedia().getDuration();
+                    // multiply duration by percentage calculated by slider position
+                    mediaPlayer.seek(duration.multiply(positionSlider.getValue() / 100.0));
+                }
+            }};
+    }
+
+    @FXML
+    protected void previousButtonClick() {
+        playlist.getSelectionModel().selectPrevious();
+        playFromPlaylist();
+    }
+
+    @FXML
+    protected void nextButtonClick() {
+        playlist.getSelectionModel().selectNext();
+        playFromPlaylist();
     }
 }
