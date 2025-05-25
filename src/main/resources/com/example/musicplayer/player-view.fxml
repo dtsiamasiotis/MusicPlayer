@@ -106,6 +106,8 @@
          <children>
             <Button fx:id="addToPlaylistButton" mnemonicParsing="false" onAction="#addToPlaylist" text="Add" visible="false" />
             <Button fx:id="removeFromPlaylistButton" onAction="#removeFromPlaylist" mnemonicParsing="false" text="Remove" visible="false" />
+             <Button fx:id="openPlaylistButton" onAction="#openPlaylist" mnemonicParsing="false" text="Open" visible="false" />
+             <Button fx:id="savePlaylistButton" onAction="#savePlaylist" mnemonicParsing="false" text="Save" visible="false" />
          </children>
       </HBox>
    </children>

@@ -3,6 +3,8 @@ package com.example.musicplayer;
 import javafx.application.Platform;
 import javafx.beans.InvalidationListener;
 import javafx.beans.Observable;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.collections.MapChangeListener;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -19,7 +21,13 @@ import javafx.scene.media.MediaPlayer;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
+import javax.swing.*;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -51,11 +59,19 @@ public class MusicPlayerController {
     @FXML
     private Label trackInfo;
 
+    @FXML
+    private Button openPlaylistButton;
+
+    @FXML
+    private Button savePlaylistButton;
+
     private Stage playlistWindow;
 
     private boolean playlistIsVisible = false;
 
     private InvalidationListener positionInvalidationListener;
+
+    private boolean hasFinishedMedia = false;
 
     @FXML
     public void initialize() {
@@ -64,7 +80,23 @@ public class MusicPlayerController {
 
     @FXML
     protected void playButtonClick() {
-        mediaPlayer.play();
+        positionSlider.setMin(0);
+        if (mediaPlayer != null && !hasFinishedMedia) {
+            mediaPlayer.play();
+        }
+        if (mediaPlayer != null && hasFinishedMedia) {
+            Media media = mediaPlayer.getMedia();
+            mediaPlayer = new MediaPlayer(media);
+            updateInfoAndCoverArt(media);
+            updateUI(mediaPlayer);
+            mediaPlayer.play();
+            hasFinishedMedia = false;
+            mediaPlayer.setOnEndOfMedia(() -> {
+                mediaPlayer.stop();
+                hasFinishedMedia = true;
+            });
+        }
+
     }
 
     private String info;
@@ -93,7 +125,10 @@ public class MusicPlayerController {
             updateInfoAndCoverArt(media);
             updateUI(mediaPlayer);
             mediaPlayer.play();
-
+            mediaPlayer.setOnEndOfMedia(() -> {
+                mediaPlayer.stop();
+                hasFinishedMedia = true;
+            });
         }
 
     }
@@ -116,7 +151,7 @@ public class MusicPlayerController {
     @FXML
     protected void openPlaylistWindow() {
         Stage currentStage = (Stage) timeLabel.getScene().getWindow();
-        if(playlistIsVisible) {
+        if (playlistIsVisible) {
             currentStage.setHeight(currentStage.getHeight() - 250);
             currentStage.setWidth(currentStage.getWidth() + 0);
             playlist.setVisible(false);
@@ -128,6 +163,8 @@ public class MusicPlayerController {
             playlist.setVisible(true);
             addToPlaylistButton.setVisible(true);
             removeFromPlaylistButton.setVisible(true);
+            openPlaylistButton.setVisible(true);
+            savePlaylistButton.setVisible(true);
         }
 
         playlistIsVisible = !playlistIsVisible;
@@ -135,18 +172,19 @@ public class MusicPlayerController {
 
     protected void updateTimeElements() {
         Platform.runLater(new Runnable() {
-            public void run(){
+            public void run() {
 
-                Double newValue = mediaPlayer.getCurrentTime().divide(mediaPlayer.getMedia().getDuration()).toMillis()*100.0;
+                Double newValue = mediaPlayer.getCurrentTime().divide(mediaPlayer.getMedia().getDuration()).toMillis() * 100.0;
                 positionSlider.setValue(newValue);
                 updateTimeLabel();
 
-        }});
+            }
+        });
 
     }
 
     protected void updateTimeLabel() {
-        String elapsedTime = String.format("%02d:%02d:%02d",(int)mediaPlayer.getCurrentTime().toHours(),(int)(mediaPlayer.getCurrentTime().toSeconds()/60),(int)(mediaPlayer.getCurrentTime().toSeconds()%60));
+        String elapsedTime = String.format("%02d:%02d:%02d", (int) mediaPlayer.getCurrentTime().toHours(), (int) (mediaPlayer.getCurrentTime().toSeconds() / 60), (int) (mediaPlayer.getCurrentTime().toSeconds() % 60));
         timeLabel.setText(elapsedTime);
     }
 
@@ -173,7 +211,7 @@ public class MusicPlayerController {
 
                 if ("*".equals(firstChar)) {
                     scrolledInfo = scrolledInfo.substring(1);
-                }else {
+                } else {
                     scrolledInfo = scrolledInfo.substring(1) + firstChar;
                 }
 
@@ -193,11 +231,8 @@ public class MusicPlayerController {
         fileChooser.getExtensionFilters().add(mp3Filter);
         File file = fileChooser.showOpenDialog(null);
         if (file != null) {
-            Media media = new Media(file.toURI().toString());
-
             playlistFiles.add(file);
             playlist.getItems().add(file.getName());
-
 
         }
 
@@ -257,10 +292,12 @@ public class MusicPlayerController {
 
         });
 
-        mediaPlayer.currentTimeProperty().addListener(new InvalidationListener() {
-            public void invalidated(Observable ov) {
+        mediaPlayer.currentTimeProperty().addListener(new ChangeListener() {
+            @Override
+            public void changed(ObservableValue observableValue, Object o, Object t1) {
                 updateTimeElements();
             }
+
         });
 
         if (positionInvalidationListener != null) {
@@ -284,7 +321,7 @@ public class MusicPlayerController {
                     trackInfo.setText(info);
                 }
                 if (change.getMap().containsKey("image")) {
-                    coverArt.setImage((Image)change.getMap().get("image"));
+                    coverArt.setImage((Image) change.getMap().get("image"));
                 }
             }
         });
@@ -298,7 +335,8 @@ public class MusicPlayerController {
                     // multiply duration by percentage calculated by slider position
                     mediaPlayer.seek(duration.multiply(positionSlider.getValue() / 100.0));
                 }
-            }};
+            }
+        };
     }
 
     @FXML
@@ -311,5 +349,70 @@ public class MusicPlayerController {
     protected void nextButtonClick() {
         playlist.getSelectionModel().selectNext();
         playFromPlaylist();
+    }
+
+    @FXML
+    protected void openPlaylist() {
+        FileChooser fileChooser = new FileChooser();
+        FileChooser.ExtensionFilter playlistFilter = new FileChooser.ExtensionFilter("Playlist Files (*.playlist)", "*.playlist");
+        fileChooser.getExtensionFilters().add(playlistFilter);
+        File file = fileChooser.showOpenDialog(null);
+        if (file != null) {
+            List<String> lines = readLinesFromFile(file.toPath());
+
+            if (lines != null) {
+                playlist.getItems().clear();
+                for (String line:lines)
+                {
+                    File tempFile = new File(line);
+                    playlistFiles.add(tempFile);
+                    playlist.getItems().add(tempFile.getName());
+                }
+
+            }
+        } else {
+            System.out.println("No file selected.");
+        }
+    }
+
+
+    public static List<String> readLinesFromFile(Path filePath) {
+        List<String> lines = null;
+        try {
+            lines = Files.readAllLines(filePath);
+        } catch (IOException e) {
+            System.err.println("Error reading the file:");
+            e.printStackTrace();
+        }
+        return lines;
+    }
+
+
+    @FXML
+    protected void savePlaylist() {
+        FileChooser fileChooser = new FileChooser();
+        FileChooser.ExtensionFilter playlistFilter = new FileChooser.ExtensionFilter("playlist files","*.playlist");
+        fileChooser.getExtensionFilters().add(playlistFilter);
+        File file = fileChooser.showSaveDialog(null);
+
+        if (file != null) {
+            savePlaylistToFile(file);
+        } else {
+            System.out.println("Save canceled.");
+        }
+    }
+
+    private void savePlaylistToFile(File file) {
+        try {
+            FileWriter fileWriter = new FileWriter(file);
+            StringBuilder content = new StringBuilder();
+            for (File playlistFile : playlistFiles) {
+                content.append(playlistFile.getAbsolutePath()).append("\n");
+            }
+            fileWriter.write(content.toString());
+            fileWriter.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }
