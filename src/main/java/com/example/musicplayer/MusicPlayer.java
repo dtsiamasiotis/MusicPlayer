@@ -1,6 +1,7 @@
 package com.example.musicplayer;
 
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
@@ -13,6 +14,11 @@ public class MusicPlayer extends Application {
         FXMLLoader fxmlLoader = new FXMLLoader(MusicPlayer.class.getResource("player-view.fxml"));
         Scene scene = new Scene(fxmlLoader.load(), 550, 220);
         stage.setTitle("Music Player");
+        stage.setResizable(false);
+        stage.setOnCloseRequest(event -> {
+            Platform.exit();
+            System.exit(0);
+        });
         stage.setScene(scene);
         stage.show();
     }

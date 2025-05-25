@@ -6,7 +6,7 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.*?>
 
-<VBox prefHeight="200.0" prefWidth="100.0" xmlns="http://javafx.com/javafx/" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.musicplayer.MusicPlayerController">
+<VBox prefHeight="200.0" prefWidth="100.0" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.musicplayer.MusicPlayerController">
    <children>
       <HBox prefHeight="100.0" prefWidth="200.0">
          <children>
@@ -31,7 +31,7 @@
                <padding>
                   <Insets top="10.0" />
                </padding></Slider>
-            <Slider>
+            <Slider fx:id="volumeSlider">
                <padding>
                   <Insets left="80.0" top="10.0" />
                </padding>
@@ -105,9 +105,9 @@
       <HBox prefHeight="100.0" prefWidth="200.0">
          <children>
             <Button fx:id="addToPlaylistButton" mnemonicParsing="false" onAction="#addToPlaylist" text="Add" visible="false" />
-            <Button fx:id="removeFromPlaylistButton" onAction="#removeFromPlaylist" mnemonicParsing="false" text="Remove" visible="false" />
-             <Button fx:id="openPlaylistButton" onAction="#openPlaylist" mnemonicParsing="false" text="Open" visible="false" />
-             <Button fx:id="savePlaylistButton" onAction="#savePlaylist" mnemonicParsing="false" text="Save" visible="false" />
+            <Button fx:id="removeFromPlaylistButton" mnemonicParsing="false" onAction="#removeFromPlaylist" text="Remove" visible="false" />
+             <Button fx:id="openPlaylistButton" mnemonicParsing="false" onAction="#openPlaylist" text="Open" visible="false" />
+             <Button fx:id="savePlaylistButton" mnemonicParsing="false" onAction="#savePlaylist" text="Save" visible="false" />
          </children>
       </HBox>
    </children>

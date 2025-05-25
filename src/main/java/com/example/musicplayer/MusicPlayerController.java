@@ -21,8 +21,6 @@ import javafx.scene.media.MediaPlayer;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
-import javax.swing.*;
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -36,7 +34,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class MusicPlayerController {
 
     @FXML
+    public Slider volumeSlider;
+
+    @FXML
     private ImageView coverArt;
+
     @FXML
     private ListView playlist;
 
@@ -65,7 +67,6 @@ public class MusicPlayerController {
     @FXML
     private Button savePlaylistButton;
 
-    private Stage playlistWindow;
 
     private boolean playlistIsVisible = false;
 
@@ -75,28 +76,23 @@ public class MusicPlayerController {
 
     @FXML
     public void initialize() {
-
+        volumeSlider.setValue(100);
     }
 
     @FXML
     protected void playButtonClick() {
         positionSlider.setMin(0);
-        if (mediaPlayer != null && !hasFinishedMedia) {
-            mediaPlayer.play();
-        }
-        if (mediaPlayer != null && hasFinishedMedia) {
-            Media media = mediaPlayer.getMedia();
-            mediaPlayer = new MediaPlayer(media);
-            updateInfoAndCoverArt(media);
-            updateUI(mediaPlayer);
-            mediaPlayer.play();
-            hasFinishedMedia = false;
-            mediaPlayer.setOnEndOfMedia(() -> {
-                mediaPlayer.stop();
-                hasFinishedMedia = true;
-            });
-        }
-
+        Media media = mediaPlayer.getMedia();
+        mediaPlayer = new MediaPlayer(media);
+        updateInfoAndCoverArt(media);
+        mediaPlayer.setVolume(volumeSlider.getValue() / 100.0);
+        updateUI(mediaPlayer);
+        mediaPlayer.play();
+        hasFinishedMedia = false;
+        mediaPlayer.setOnEndOfMedia(() -> {
+            mediaPlayer.stop();
+            hasFinishedMedia = true;
+        });
     }
 
     private String info;
@@ -123,8 +119,10 @@ public class MusicPlayerController {
             mediaPlayer = new MediaPlayer(media);
             positionSlider.setMin(0);
             updateInfoAndCoverArt(media);
+            mediaPlayer.setVolume(volumeSlider.getValue() / 100.0);
             updateUI(mediaPlayer);
             mediaPlayer.play();
+
             mediaPlayer.setOnEndOfMedia(() -> {
                 mediaPlayer.stop();
                 hasFinishedMedia = true;
@@ -264,6 +262,7 @@ public class MusicPlayerController {
         mediaPlayer = new MediaPlayer(media);
         coverArt.setImage(new Image("file:src/main/resources/com/example/musicplayer/icons/unknown_cover.png"));
         updateInfoAndCoverArt(media);
+        mediaPlayer.setVolume(volumeSlider.getValue() / 100.0);
         updateUI(mediaPlayer);
         mediaPlayer.play();
         mediaPlayer.setOnEndOfMedia(() -> {
@@ -274,6 +273,7 @@ public class MusicPlayerController {
                 mediaPlayer = new MediaPlayer(nextMedia);
                 coverArt.setImage(new Image("file:src/main/resources/com/example/musicplayer/icons/unknown_cover.png"));
                 updateInfoAndCoverArt(nextMedia);
+                mediaPlayer.setVolume(volumeSlider.getValue() / 100.0);
                 updateUI(mediaPlayer);
                 playlist.getSelectionModel().selectNext();
                 mediaPlayer.play();
@@ -299,6 +299,20 @@ public class MusicPlayerController {
             }
 
         });
+
+        volumeSlider.valueProperty().addListener(new InvalidationListener() {
+            public void invalidated(Observable ov) {
+                if (volumeSlider.isValueChanging()) {
+                    mediaPlayer.setVolume(volumeSlider.getValue() / 100.0);
+                }
+
+            }
+        });
+
+        if (!volumeSlider.isValueChanging()) {
+            volumeSlider.setValue((int) Math.round(mediaPlayer.getVolume()
+                    * 100));
+        }
 
         if (positionInvalidationListener != null) {
             positionSlider.valueProperty().removeListener(positionInvalidationListener);
