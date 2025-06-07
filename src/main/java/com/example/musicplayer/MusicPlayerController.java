@@ -355,12 +355,16 @@ public class MusicPlayerController {
 
     @FXML
     protected void previousButtonClick() {
+        if (playlistFiles.isEmpty())
+            return;
         playlist.getSelectionModel().selectPrevious();
         playFromPlaylist();
     }
 
     @FXML
     protected void nextButtonClick() {
+        if (playlistFiles.isEmpty())
+            return;
         playlist.getSelectionModel().selectNext();
         playFromPlaylist();
     }
